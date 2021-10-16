@@ -8,6 +8,47 @@ data:
   AWS_ACCESS_KEY_ID: ${SCW_LOG_ACCESS_KEY_B64}
   AWS_SECRET_ACCESS_KEY: ${SCW_LOG_SECRET_KEY_B64}
 ---
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: monitor
+  namespace: monitor
+spec:
+  version: ${ELASTIC_VERSION}
+  volumeClaimDeletePolicy: ${ELASTIC_STORAGE_POLICY}
+  auth:
+    fileRealm:
+    - secretName: ${APP_GROUP}-es-users
+    roles:
+    - secretName: ${APP_GROUP}-es-roles
+  nodeSets:
+  - name: default
+    count: ${ELASTIC_NODES}
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: ${ELASTIC_STORAGE_SIZE}
+    podTemplate:
+      spec:
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        containers:
+        - name: elasticsearch
+          env:
+          - name: ES_JAVA_OPTS
+            value: -Xms${ELASTIC_MEM_JVM} -Xmx${ELASTIC_MEM_JVM}
+          resources:
+            requests:
+              memory: ${ELASTIC_MEM}
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -585,35 +626,3 @@ spec:
   count: 1
   elasticsearchRef:
     name: monitor
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ${APP_ID}-route
-  namespace: ${KUBE_NAMESPACE}
-  annotations:
-    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-    nginx.ingress.kubernetes.io/whitelist-source-range: "${IP_WHITELIST}"
-    nginx.ingress.kubernetes.io/server-snippet: |
-      error_page 403 @forbidden;
-      location @forbidden {
-        return 301 https://www.courdecassation.fr;
-      }
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - ${APP_HOST}
-    secretName: ${APP_ID}-cert-${ACME}
-  rules:
-  - host: ${APP_HOST}
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: monitor-kb-http
-            port:
-              number: 5601
-

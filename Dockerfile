@@ -8,6 +8,8 @@ ARG no_proxy
 ARG npm_registry
 ARG NPM_LATEST
 
+RUN apk add curl
+
 # use proxy & private npm registry
 RUN if [ ! -z "$http_proxy" ] ; then \
         npm config delete proxy; \
@@ -56,7 +58,7 @@ CMD ["npm","run", "dev"]
 ###############################
 FROM base as production
 ARG NPM_AUDIT_DRY_RUN
-ENV APP_ID=judilibre-admin
+ENV APP_ID=monitor
 ENV API_PORT=8080
 ENV NODE_ENV=production
 
@@ -64,6 +66,7 @@ WORKDIR /home/node/
 COPY package.json package-lock.json ./
 RUN chown node package-lock.json
 USER node
+
 
 # Install production dependencies and clean cache
 RUN npm install --production && \
@@ -76,7 +79,7 @@ ADD src/ ./src
 # Expose the listening port of your app
 EXPOSE ${API_PORT}
 
-HEALTHCHECK --interval=5m --timeout=2m --start-period=45s \
-   CMD curl -f --silent --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:${API_PORT}/healthcheck" || bash -c 'kill -s 15 -1 && (sleep 10; kill -s 9 -1)'
+# HEALTHCHECK --interval=5m --timeout=2m --start-period=45s \
+#   CMD curl -f --silent --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:${API_PORT}/healthcheck" || bash -c 'kill -s 15 -1 && (sleep 10; kill -s 9 -1)'
 
 CMD ["npm","run", "start"]

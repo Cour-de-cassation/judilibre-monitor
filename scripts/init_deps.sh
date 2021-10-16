@@ -30,4 +30,4 @@ for file in $(ls ${KUBE_SRC}); do
     if [ ! -f "./k8s/$file" ]; then
         ln -s ${KUBE_SRC}/$file ./k8s/$file;
     fi;
-fi;
+done;
