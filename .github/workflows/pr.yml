@@ -24,7 +24,7 @@ jobs:
       ELASTIC_STORAGE_SIZE: 3Gi
       ELASTIC_VERSION: 7.14.1
       KUBE_NAMESPACE: monitor
-      KUBE_SERVICES: elasticsearch-roles elasticsearch-users monitor service deployment
+      KUBE_SERVICES: elasticsearch-users monitor service deployment
       KUBE_TYPE: k3s
       KUBE_ZONE: local
       SCW_LOG_BUCKET: ${{ secrets.SCW_LOG_BUCKET }}
