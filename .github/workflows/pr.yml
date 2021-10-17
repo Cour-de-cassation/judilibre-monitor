@@ -1,0 +1,65 @@
+name: Test & Build
+
+on: [pull_request]
+
+jobs:
+  build:
+    name: 🐳 Build docker image
+    runs-on: ubuntu-latest
+    env:
+      APP_GROUP: monitor
+      APP_HOST: monitor.judilibre.local
+      APP_ID: monitor
+      APP_NODES: 1
+      APP_PORT: 443
+      API_PORT: 8080
+      APP_SCHEME: https
+      APP_SELF_SIGNED: true
+      DOCKER_USERNAME: opendatajustice
+      ELASTIC_INDEX: logstash-*
+      ELASTIC_NODES: 1
+      ELASTIC_MEM: 1024Mi
+      ELASTIC_MEM_JVM: 512m
+      ELASTIC_STORAGE_POLICY: DeleteOnScaledownAndClusterDeletion
+      ELASTIC_STORAGE_SIZE: 3Gi
+      ELASTIC_VERSION: 7.14.1
+      KUBE_NAMESPACE: monitor
+      KUBE_SERVICES: elasticsearch-users monitor service deployment
+      KUBE_TYPE: k3s
+      KUBE_ZONE: local
+      SCW_LOG_BUCKET: ${{ secrets.SCW_LOG_BUCKET }}
+      SCW_LOG_ACCESS_KEY: ${{ secrets.SCW_LOG_ACCESS_KEY }}
+      SCW_LOG_SECRET_KEY: ${{ secrets.SCW_LOG_SECRET_KEY }}
+      START_TIMEOUT: 120
+    steps:
+      - uses: actions/checkout@v1
+      - name: get version
+        run: echo "##[set-output name=version;]$(cat package.json | jq -r '.version')-$(git rev-parse --short HEAD)"
+        id: extract_version
+      - name: extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF} | sed 's|^refs/heads/||;' | tr '/' '-')"
+        id: extract_branch
+      - name: init deps
+        run: ./scripts/init_deps.sh
+        env:
+          GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+      - name: 🐋 Build the master docker image
+        run: ./scripts/docker-build.sh
+        env:
+          GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          VERSION: ${{ steps.extract_version.outputs.version }}
+      - name: ☸️  Deploy local k8s services
+        run: ./scripts/deploy_k8s_services.sh || (tail -f k8s*log && exit 1)
+        env:
+          GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          VERSION: ${{ steps.extract_version.outputs.version }}
+      - name: ✅ Execute minimal tests
+        run: |
+          kubectl get pods --namespace=${KUBE_NAMESPACE}
+          kubectl logs service/${APP_ID}-svc --namespace=${KUBE_NAMESPACE}
+          ./scripts/test_minimal.sh
+        env:
+          GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          KUBECONFIG: /home/runner/.kube/config-local-k3s.yaml

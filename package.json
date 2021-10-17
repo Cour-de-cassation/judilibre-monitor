@@ -1,0 +1,25 @@
+{
+  "name": "judilibre-monitor",
+  "version": "0.1.0",
+  "description": "API de monitoring pour la plateforme JUDILIBRE.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node src/.",
+    "start": "node src/."
+  },
+  "author": "sebastien.courvoisier@justice.fr",
+  "license": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cour-de-cassation/judilibre-admin.git"
+  },
+  "dependencies": {
+    "@elastic/elasticsearch": "^7.14.0",
+    "cors": "^2.8.5",
+    "dotenv": "^9.0.2",
+    "express": "^4.17.1",
+    "express-validator": "^6.12.1",
+    "rate-limiter-flexible": "^2.2.4"
+  }
+}
