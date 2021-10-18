@@ -1154,7 +1154,7 @@ function computeQuery({query,cluster,date_end,date_start,date_interval}) {
           }
         }
       },
-    "bandwith_date_histogram": {
+    "bandwidth_date_histogram": {
         "aggs": {
           "0": {
             "date_histogram": {
