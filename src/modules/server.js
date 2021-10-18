@@ -3,9 +3,9 @@ const path = require('path');
 const express = require('express');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 const rateLimiter = new RateLimiterMemory({
-  points: 10,
-  duration: 1,
-  blockDuration: 5 * 60,
+  points: 35,
+  duration: 10,
+  blockDuration: 30,
 });
 const rateLimiterMiddleware = (req, res, next) => {
   rateLimiter
