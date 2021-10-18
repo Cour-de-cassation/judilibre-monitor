@@ -1,6 +1,7 @@
 require('./env');
 const path = require('path');
 const express = require('express');
+const cors = require('cors');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 const rateLimiter = new RateLimiterMemory({
   points: 35,
@@ -32,7 +33,7 @@ const rateLimiterMiddleware = (req, res, next) => {
 class Server {
   constructor() {
     this.app = express();
-    this.app.use(express.json({ limit: '50mb' }));
+    this.app.use(cors());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(rateLimiterMiddleware);
     this.app.use((req, res, next) => {
