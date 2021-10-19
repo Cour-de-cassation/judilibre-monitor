@@ -24,22 +24,55 @@ async function stats(query) {
     throw "Invalid query parameters";
   }
 
-  const content = await this.client.search({
-    index: process.env.ELASTIC_INDEX,
-    size: 0,
-    track_total_hits: true,
-    body: elasticQuery
-  });
+  let content;
+  try {
+    content = await this.client.search({
+      index: process.env.ELASTIC_INDEX,
+      size: 0,
+      track_total_hits: true,
+      body: elasticQuery
+    });
+  } catch(e) {
+    console.log(JSON.stringify(e));
+    return;
+  }
 
   if (content && content.body) {
-    if (content.body.aggregations && content.body.aggregations["0"]) {
-      response[checkedQuery.query] = content.body.aggregations["0"];
-      response[checkedQuery.query].type = "agg";
-    } else {
-      response[checkedQuery.query] = {
-        value: content.body.hits.total.value,
-        type: "total"
+    response[checkedQuery.query] = {};
+    if (content.body.aggregations && content.body.aggregations["0"] && content.body.aggregations["0"].buckets) {
+      if (content.body.aggregations["0"].buckets[0].key_as_string) {
+        // time series
+        response[checkedQuery.query].data = content.body.aggregations["0"].buckets.map(b => {
+          let data = { date: b.key_as_string };
+          Object.keys(b).forEach(k => {
+            if (b[k].buckets) {
+              b[k].buckets.forEach(bb => {
+                data[bb.key]=bb.doc_count;
+              })
+            } else if (b[k].values) {
+              data = {...data, ...b[k].values};
+            } else if (b[k].value) {
+              data[k] = b[k].value;
+            }
+          });
+          return data;
+        });
+        response[checkedQuery.query].type = "time_series";
+      } else {
+        // histogram
+        let data = {};
+        content.body.aggregations["0"].buckets.forEach(b => {
+          data[b.key] = b.doc_count;
+        });
+        response[checkedQuery.query].data = data;
+        response[checkedQuery.query].type = "histogram";
       }
+    } else {
+        // total or simple aggregation
+        response[checkedQuery.query] = {
+          data: (content.body.aggregations && content.body.aggregations["0"] && content.body.aggregations["0"].value ) || content.body.hits.total.value,
+          type: "number"
+        }
     }
     response[checkedQuery.query].scope = {
       cluster: checkedQuery.cluster,
@@ -169,19 +202,19 @@ function computeQuery({query,cluster,date_end,date_start,date_interval}) {
     "api_requests_date_histogram": {
         "aggs": {
           "0": {
-            "terms": {
-              "field": "request_api.keyword",
-              "order": {
-                "_count": "desc"
-              },
-              "size": 6
+            "date_histogram": {
+              "field": "date",
+              "fixed_interval": `${date_interval}`,
+              "time_zone": "Europe/Paris"
             },
             "aggs": {
               "1": {
-                "date_histogram": {
-                  "field": "date",
-                  "fixed_interval": `${date_interval}`,
-                  "time_zone": "Europe/Paris"
+                "terms": {
+                  "field": "request_api.keyword",
+                  "order": {
+                    "_count": "desc"
+                  },
+                  "size": 6
                 }
               }
             }
@@ -392,7 +425,7 @@ function computeQuery({query,cluster,date_end,date_start,date_interval}) {
       },
     "search_top_50": {
         "aggs": {
-          "2": {
+          "0": {
             "terms": {
               "field": "request_params_query.keyword",
               "order": {
@@ -1063,28 +1096,22 @@ function computeQuery({query,cluster,date_end,date_start,date_interval}) {
               "time_zone": "Europe/Paris"
             },
             "aggs": {
-              "1": {
-                "percentiles": {
-                  "field": "Mem.total",
-                  "percents": [
-                    50
-                  ]
+              "Mem.total": {
+                "max": {
+                  "field": "Mem.total"
                 }
               },
-              "2": {
-                "percentiles": {
-                  "field": "Mem.used",
-                  "percents": [
-                    50
-                  ]
+              "Mem.used.mean": {
+                "avg": {
+                  "field": "Mem.used"
                 }
               },
-              "3": {
+              "Mem.used.max": {
                 "max": {
                   "field": "Mem.used"
                 }
               },
-              "4": {
+              "Mem.used.min": {
                 "min": {
                   "field": "Mem.used"
                 }
@@ -1163,7 +1190,7 @@ function computeQuery({query,cluster,date_end,date_start,date_interval}) {
               "time_zone": "Europe/Paris"
             },
             "aggs": {
-              "1": {
+              "body_bytes_sent": {
                 "sum": {
                   "field": "body_bytes_sent"
                 }
