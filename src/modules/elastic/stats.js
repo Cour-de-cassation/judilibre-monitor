@@ -15,7 +15,8 @@ async function stats(query) {
     cluster: query.cluster || DEFAULT_CLUSTER,
     date_end: query.date_end || DEFAULT_DATE_END,
     date_start: query.date_start || DEFAULT_DATE_START,
-    date_interval: query.date_interval || DEFAULT_DATE_INTERVAL
+    date_interval: query.date_interval || DEFAULT_DATE_INTERVAL,
+    size: query.size || 10
   };
 
   const elasticQuery = computeQuery({...checkedQuery});
