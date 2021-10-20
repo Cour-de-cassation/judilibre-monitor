@@ -101,7 +101,7 @@ function renameKeys(keysMap, obj) {
   );
 }
 
-function computeQuery({query,cluster,date_end,date_start,date_interval}) {
+function computeQuery({query,cluster,date_end,date_start,date_interval,size}) {
   const queries = {
     "api_requests_number": {
         "aggs": {},
@@ -424,7 +424,7 @@ function computeQuery({query,cluster,date_end,date_start,date_interval}) {
           }
         }
       },
-    "search_top_50": {
+    "top_words": {
         "aggs": {
           "0": {
             "terms": {
@@ -432,7 +432,7 @@ function computeQuery({query,cluster,date_end,date_start,date_interval}) {
               "order": {
                 "_count": "desc"
               },
-              "size": 50
+              "size": size
             }
           }
         },
