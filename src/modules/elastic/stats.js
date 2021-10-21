@@ -1097,9 +1097,9 @@ function computeQuery({query,cluster,date_end,date_start,date_interval,size}) {
               "time_zone": "Europe/Paris"
             },
             "aggs": {
-              "Mem.total": {
-                "max": {
-                  "field": "Mem.total"
+              "Mem.used.min": {
+                "min": {
+                  "field": "Mem.used"
                 }
               },
               "Mem.used.mean": {
@@ -1112,9 +1112,9 @@ function computeQuery({query,cluster,date_end,date_start,date_interval,size}) {
                   "field": "Mem.used"
                 }
               },
-              "Mem.used.min": {
-                "min": {
-                  "field": "Mem.used"
+              "Mem.total": {
+                "max": {
+                  "field": "Mem.total"
                 }
               }
             }
