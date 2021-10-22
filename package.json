@@ -8,7 +8,7 @@
     "dev": "node src/.",
     "start": "node src/."
   },
-  "author": "sebastien.courvoisier@justice.fr",
+  "author": "fabien.antoine@m4x.org",
   "license": "",
   "repository": {
     "type": "git",
