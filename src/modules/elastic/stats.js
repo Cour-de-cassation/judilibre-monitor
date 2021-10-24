@@ -1,10 +1,16 @@
 require('../env');
 
 const DEFAULT_QUERY_TYPE = "api_requests_number";
-const DEFAULT_CLUSTER = "judilibre-scw-prod-par2";
+const DEFAULT_ENV = "production";
 const DEFAULT_DATE_END = "now";
 const DEFAULT_DATE_START = "now-1d";
 const DEFAULT_DATE_INTERVAL = "30m";
+
+const ENVIRONMENT = {
+  production: "judilibre-scw-prod-par2",
+  secours: "judilibre-scw-prod-par1",
+  recette: "judilibre-scw-dev-par1"
+};
 
 async function stats(query) {
   const response = {
@@ -12,7 +18,7 @@ async function stats(query) {
 
   const checkedQuery = {
     query: query.query || DEFAULT_QUERY_TYPE,
-    cluster: query.cluster || DEFAULT_CLUSTER,
+    env: query.env || DEFAULT_ENV,
     date_end: query.date_end || DEFAULT_DATE_END,
     date_start: query.date_start || DEFAULT_DATE_START,
     date_interval: query.date_interval || DEFAULT_DATE_INTERVAL,
@@ -22,7 +28,7 @@ async function stats(query) {
   const elasticQuery = computeQuery({...checkedQuery});
 
   if (!elasticQuery) {
-    throw "Invalid query parameters";
+    throw {message: "Invalid query"};
   }
 
   let content;
@@ -76,7 +82,7 @@ async function stats(query) {
         }
     }
     response[checkedQuery.query].scope = {
-      cluster: checkedQuery.cluster,
+      env: checkedQuery.env,
       date_end: checkedQuery.date_end,
       date_start: checkedQuery.date_start,
       date_interval: checkedQuery.date_interval
@@ -101,7 +107,8 @@ function renameKeys(keysMap, obj) {
   );
 }
 
-function computeQuery({query,cluster,date_end,date_start,date_interval,size}) {
+function computeQuery({query,env,date_end,date_start,date_interval,size}) {
+  const cluster = ENVIRONMENT[env];
   const queries = {
     "api_requests_number": {
         "aggs": {},

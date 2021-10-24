@@ -3,7 +3,14 @@ const express = require('express');
 const api = express.Router();
 const { checkSchema, validationResult } = require('express-validator');
 const Elastic = require('../modules/elastic');
+const metrics = require('../modules/piste');
 const route = 'stats';
+
+const queries = [
+  "zz","piste","api_requests_number","api_request_date_histogram","decision_uniq_number",
+  "search_top_50","errors_histogram","requests_ip_source","latencty_date_histogram",
+  "pods_number","cpu_date_histogram","mem_date_histogram","bandwith_date_histogram"
+];
 
 api.get(
   `/${route}`,
@@ -11,10 +18,10 @@ api.get(
     query: {
       in: 'query',
       isString: true,
-      matches: {
-        options: [/\b(api_requests_number|api_request_date_histogram|decision_uniq_number|search_top_50|errors_histogram|requests_ip_source|latencty_date_histogram|pods_number|cpu_date_histogram|mem_date_histogram|bandwith_date_histogram)\b/],
-        errorMessage: "Invalid query"
-      }
+      isIn: {
+        options: [queries]
+      },
+      errorMessage: 'Invalid query'
     },
     date_start: {
       in: 'query',
@@ -36,14 +43,17 @@ api.get(
       },
       optional: true,
     },
-    cluster: {
+    env: {
       in: 'query',
-      isString: true,
-      errorMessage: `Cluster must be a string.`,
+      isIn: {
+        options: [['production', 'secours', 'recette']],
+        errorMessage: "Environment must be in ['production', 'secours', 'recette']",
+      },
+      errorMessage: "Invalid env",
       optional: true,
     }
   }),
-  async (req, res) => {
+  async (req, res, next) => {
   try {
     const result = await getStats(req.query);
     if (result.errors) {
