@@ -66,11 +66,14 @@ api.get(
   } catch (e) {
     return res
       .status(500)
-      .json({ route: `${req.method} ${req.path}`, errors: [{ msg: 'Internal Server Error', error: e.message }] });
+      .json({ route: `${req.method} ${req.path}`, errors: [{ msg: 'Internal Server Error', error: e.message || JSON.stringify(e) }] });
   }
 });
 
 async function getStats(query) {
+  if (query.query === "piste") {
+    return await metrics(query);
+  }
   return await Elastic.stats(query);
 }
 

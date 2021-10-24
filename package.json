@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node src/.",
+    "dev": "node --trace-warnings src/.",
     "start": "node src/."
   },
   "author": "fabien.antoine@m4x.org",
@@ -19,7 +19,8 @@
     "cors": "^2.8.5",
     "dotenv": "^9.0.2",
     "express": "^4.17.1",
-    "express-validator": "^6.12.1",
+    "express-validator": "^6.13.0",
+    "node-fetch": "^3.0.0",
     "rate-limiter-flexible": "^2.2.4"
   }
 }
