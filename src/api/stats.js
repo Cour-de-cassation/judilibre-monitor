@@ -4,10 +4,11 @@ const api = express.Router();
 const { checkSchema, validationResult } = require('express-validator');
 const Elastic = require('../modules/elastic');
 const metrics = require('../modules/piste');
+const judilibre = require('../modules/judilibre');
 const route = 'stats';
 
 const queries = [
-  "zz","piste","api_requests_number","api_request_date_histogram","decision_uniq_number",
+  "total_docs","piste","api_requests_number","api_request_date_histogram","decision_uniq_number",
   "search_top_50","errors_histogram","requests_ip_source","latencty_date_histogram",
   "pods_number","cpu_date_histogram","mem_date_histogram","bandwith_date_histogram"
 ];
@@ -73,8 +74,11 @@ api.get(
 async function getStats(query) {
   if (query.query === "piste") {
     return await metrics(query);
+  } else if (query.query === "total_docs") {
+    return await judilibre(query);
+  } else {
+    return await Elastic.stats(query);
   }
-  return await Elastic.stats(query);
 }
 
 module.exports = api;
