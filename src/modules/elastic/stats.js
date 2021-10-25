@@ -47,7 +47,7 @@ async function stats(query) {
   if (content && content.body) {
     response[checkedQuery.query] = {};
     if (content.body.aggregations && content.body.aggregations["0"] && content.body.aggregations["0"].buckets) {
-      if (content.body.aggregations["0"].buckets[0].key_as_string) {
+      if (content.body.aggregations["0"].buckets.length && content.body.aggregations["0"].buckets[0].key_as_string) {
         // time series
         response[checkedQuery.query].data = content.body.aggregations["0"].buckets.map(b => {
           let data = { date: b.key_as_string };
