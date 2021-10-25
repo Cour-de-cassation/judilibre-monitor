@@ -11,11 +11,11 @@ const stats = async (query) => {
 
   const checkedQuery = {
     query: "total_docs",
-    env: query.env || DEFAULT_ENV
+    env: (query.env === "secours" ? "production" : query.env) || DEFAULT_ENV
   };
 
   if (!['production','recette'].includes(checkedQuery.env)) {
-    throw {message: "Invalid env"};
+    throw { message: "Invalid env" };
   }
 
   let response, json;

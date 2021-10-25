@@ -39,7 +39,7 @@ const metrics = async (query) => {
 
   const checkedQuery = {
     query: "piste",
-    env: query.env || DEFAULT_ENV,
+    env: (query.env === 'secours' ? 'production' : query.env )|| DEFAULT_ENV,
     date_end: convertESdate(query.date_end || DEFAULT_DATE_END),
     date_start: convertESdate(query.date_start || DEFAULT_DATE_START),
   };
