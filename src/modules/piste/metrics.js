@@ -38,6 +38,7 @@ const convertESdate = (dateString) => {
 const metrics = async (query) => {
 
   const checkedQuery = {
+    query: "piste",
     env: query.env || DEFAULT_ENV,
     date_end: convertESdate(query.date_end || DEFAULT_DATE_END),
     date_start: convertESdate(query.date_start || DEFAULT_DATE_START),
@@ -56,6 +57,11 @@ const metrics = async (query) => {
         "Authorization": `Bearer ${token}`
       }
     });
+
+    if (!response.ok) {
+      throw {message: `Piste error ${response.status}`};
+    }
+
     json = await response.json();
 
     if (!json.result) {
@@ -71,7 +77,10 @@ const metrics = async (query) => {
 
     json.result.forEach((d) => {
       if (d.organizationname === "Universelle") {
-        result[checkedQuery.query].data[d.orgapplication.replace('Universelle: ','')] = d.totalnummessages;
+        let shortAppId = d.orgapplication.replace(/^(Universelle: (APP_SANDBOX_(.*@(.*))$)?)(.*)$/,'$4$5');
+        shortAppId = shortAppId.replace(/^(m4x|gmail|outlook|apple|icloud|hotmail|orange|wanadoo|aol|free)\.(fr|org|com)$/,'autre');
+        result[checkedQuery.query].data[shortAppId] = result[checkedQuery.query].data[shortAppId] ?
+          result[checkedQuery.query].data[shortAppId] + d.totalnummessages : d.totalnummessages;
       }
     });
     result[checkedQuery.query].scope = {
