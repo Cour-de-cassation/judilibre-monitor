@@ -71,13 +71,30 @@ api.get(
   }
 });
 
+const cached = {};
+
 async function getStats(query) {
-  if (query.query === "piste") {
-    return await metrics(query);
-  } else if (['total_docs','last_decision_date'].includes(query.query)) {
-    return await judilibre(query);
-  } else {
-    return await Elastic.stats(query);
+  if (cached[JSON.stringify(query)] && cached[JSON.stringify(query)].expiration > (new Date(Date.now()))) {
+    return { cached: true, ...cached[JSON.stringify(query)] };
+  }
+  try {
+    let response;
+    if (query.query === "piste") {
+      response = await metrics(query);
+    } else if (['total_docs','last_decision_date'].includes(query.query)) {
+      response = await judilibre(query);
+    } else {
+      response = await Elastic.stats(query);
+    }
+    const date = new Date(Date.now() + 60 * 1000);
+    cached[JSON.stringify(query)] = { expiration: date, ...response };
+    return { cached: false, ...response };
+  } catch(e) {
+    if (cached[JSON.stringify(query)]) {
+      return {cached: true, error: e.message, ...cached[JSON.stringify(query)]};
+    } else {
+      throw(e);
+    }
   }
 }
 
