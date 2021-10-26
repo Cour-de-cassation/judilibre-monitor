@@ -29,7 +29,6 @@ const stats = async (query) => {
 
   if (cached[checkedQuery.env] && (cached[checkedQuery.env].expiration > (new Date(Date.now())))) {
     json = cached[checkedQuery.env];
-    console.log(json);
   } else {
     try {
       response = await fetch(judilibre_stats_url(checkedQuery.env), {
@@ -46,7 +45,7 @@ const stats = async (query) => {
       json = await response.json();
 
       cached[checkedQuery.env] = json;
-      cached[checkedQuery.env].expiration = new Date(Date.now()) + 60 * 1000;
+      cached[checkedQuery.env].expiration = new Date(Date.now() + 60 * 1000);
 
     } catch(e) {
       console.log('stats', response, json, e.message);
