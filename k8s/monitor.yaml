@@ -272,6 +272,20 @@ spec:
     requests:
       storage: 75Gi
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: logstash-data-plugins
+  namespace: monitor
+  labels:
+    app: logstash
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -351,6 +365,12 @@ spec:
         app: logstash
     spec:
       initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000 /usr/share/logstash/data/plugins"]
+        volumeMounts:
+        - name: logstash-data-plugins
+          mountPath: /usr/share/logstash/data/plugins
       - name: install-plugins
         image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
         command:
@@ -389,7 +409,10 @@ spec:
             readOnly: true
           - name: s3-log-mirror
             readOnly: true
-            mountPath: /var/log/s3/
+            mountPath: /var/log/s3
+          - name: logstash-data-plugins
+            readOnly: false
+            mountPath: /usr/share/logstash/data/plugins
       volumes:
       - name: config-volume
         configMap:
@@ -409,6 +432,9 @@ spec:
       - name: s3-log-mirror
         persistentVolumeClaim:
           claimName: s3-log-mirror
+      - name: logstash-data-plugins
+        persistentVolumeClaim:
+          claimName: logstash-data-plugins
 # ---
 # apiVersion: v1
 # kind: ConfigMap
