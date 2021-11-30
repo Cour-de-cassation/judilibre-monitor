@@ -7,14 +7,16 @@ const DEFAULT_DATE_END = "now";
 const DEFAULT_DATE_START = "now-1d";
 
 const appDic = {
-  judisprudence_ninja: "judisprudence.ninja",
+  jurisprudence_ninja: "judisprudence.ninja",
   Reglex: "reglex.fondamentaux.org",
   Data: "doctrine.fr",
   juripredis: "juripredis.com",
   ImportJudilibreLuxia: "luxia.fr",
   PROD_LEXBASE: "lexbase.fr",
   test_ctrav: "wolterskluwer.com",
-  Test_Cassation: "divers",
+  Test_Cassation: "_",
+  APP_JUDILIBRE_PROD: "_",
+  Uptime: "_",
   juriwinch: "aw-avocats.fr",
   JUDILIBRE: "lefebvre-sarrut.eu"
 }
