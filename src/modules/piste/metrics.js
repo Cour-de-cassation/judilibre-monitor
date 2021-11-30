@@ -6,6 +6,19 @@ const DEFAULT_ENV = "production";
 const DEFAULT_DATE_END = "now";
 const DEFAULT_DATE_START = "now-1d";
 
+const appDic = {
+  judisprudence_ninja: "judisprudence.ninja",
+  Reglex: "reglex.fondamentaux.org",
+  Data: "doctrine.fr",
+  juripredis: "juripredis.com",
+  ImportJudilibreLuxia: "luxia.fr",
+  PROD_LEXBASE: "lexbase.fr",
+  test_ctrav: "wolterskluwer.com",
+  Test_Cassation: "divers",
+  juriwinch: "aw-avocats.fr",
+  JUDILIBRE: "lefebvre-sarrut.eu"
+}
+
 
 const piste_metrics_url = (date_start, date_end, env) => {
   return `https://${env === "recette" ? "sandbox-" : ""}api.piste.gouv.fr/v1/piste/metrics/summary?dateEnd=${date_end}&dateStart=${date_start}`;
@@ -79,6 +92,7 @@ const metrics = async (query) => {
       if (d.organizationname === "Universelle") {
         let shortAppId = d.orgapplication.replace(/^(Universelle: (APP_SANDBOX_(.*@(.*))$)?)(.*)$/,'$4$5');
         shortAppId = shortAppId.replace(/^(m4x|gmail|outlook|apple|icloud|hotmail|orange|wanadoo|aol|free)\.(fr|org|com)$/,'autre');
+        shortAppId = appDic[shortAppId] || shortAppId;
         result[checkedQuery.query].data[shortAppId] = result[checkedQuery.query].data[shortAppId] ?
           result[checkedQuery.query].data[shortAppId] + d.totalnummessages : d.totalnummessages;
       }
