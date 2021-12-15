@@ -1,5 +1,6 @@
 require('../modules/env');
 const express = require('express');
+const { Parser } = require('json2csv');
 const api = express.Router();
 const { checkSchema, validationResult } = require('express-validator');
 const Elastic = require('../modules/elastic');
@@ -52,6 +53,15 @@ api.get(
       },
       errorMessage: "Invalid env",
       optional: true,
+    },
+    format: {
+      in: 'query',
+      isIn: {
+        options: [['csv', 'json']],
+        errorMessage: "Format must be in ['csv', 'json']"
+      },
+      errorMessage: "Invalid format",
+      optional: true
     }
   }),
   async (req, res, next) => {
@@ -63,7 +73,15 @@ api.get(
         errors: result.errors,
       });
     }
-    return res.status(200).json(result);
+    if (req.query && req.query.format == 'csv') {
+      const json2csv = new Parser({ fields });
+      res.header('Content-Type', 'text/csv');
+      const csv = json2csv.parse(result);
+      res.attachment(res.query.query || 'data.csv');
+      return res.send(csv);
+    } else {
+      return res.status(200).json(result);
+    }
   } catch (e) {
     return res
       .status(500)
