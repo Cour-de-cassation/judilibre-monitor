@@ -67,6 +67,7 @@ jobs:
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           VERSION: ${{ steps.extract_version.outputs.version }}
+          KUBE_SERVICES_FORCE_DEPLOY: monitor
       - name: ✅ Execute minimal tests
         if: steps.docker_check.outputs.status == 'build_needed'
         run: |
