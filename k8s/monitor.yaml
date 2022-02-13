@@ -417,6 +417,35 @@ spec:
           if [ "${SCW_LOG_GZIP}" == "true" ]; then
             rclone -v copy --checkers=8 --transfers=8 --ignore-existing s3:${SCW_LOG_ARCHIVE_BUCKET} ${LOG_DIR};
           fi;
+        env:
+        - name: RCLONE_CONFIG_S3_TYPE
+          value: s3
+        - name: RCLONE_CONFIG_S3_ENV_AUTH
+          value: "false"
+        - name: RCLONE_CONFIG_S3_ENDPOINT
+          value: s3.${SCW_REGION}.scw.cloud
+        - name: RCLONE_CONFIG_S3_REGION
+          value: ${SCW_REGION}
+        - name: RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION
+          value: ""
+        - name: RCLONE_CONFIG_S3_FORCE_PATH_STYLE
+          value: "false"
+        - name: RCLONE_CONFIG_S3_LOCATION_CONSTRAINT
+          value: ""
+        - name: RCLONE_CONFIG_S3_STORAGE_CLASS
+          value: ""
+        - name: RCLONE_CONFIG_S3_ACL
+          value: private
+        - name: RCLONE_CONFIG_S3_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: s3-log-keys
+              key: AWS_ACCESS_KEY_ID
+        - name: RCLONE_CONFIG_S3_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: s3-log-keys
+              key: AWS_SECRET_ACCESS_KEY
       - name: fix-permissions
         image: busybox
         command: ["sh", "-c", "chown -R 1000 /usr/share/logstash/data/plugins"]
