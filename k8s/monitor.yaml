@@ -295,7 +295,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 200Gi
+      storage: 50Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -524,7 +524,7 @@ spec:
 #   - ReadWriteOnce
 #   resources:
 #     requests:
-#       storage: 100Gi
+#       storage: 50Gi
 # ---
 # apiVersion: apps/v1
 # kind: Deployment
