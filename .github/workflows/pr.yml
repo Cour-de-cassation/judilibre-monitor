@@ -24,7 +24,6 @@ jobs:
       ELASTIC_MEM_JVM: 512m
       ELASTIC_STORAGE_POLICY: DeleteOnScaledownAndClusterDeletion
       ELASTIC_STORAGE_SIZE: 3Gi
-      ELASTIC_VERSION: 7.14.1
       KUBE_NAMESPACE: monitor
       KUBE_SERVICES: elasticsearch-users monitor service deployment
       KUBE_TYPE: k3s
