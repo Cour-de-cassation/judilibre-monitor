@@ -24,12 +24,12 @@ jobs:
       ELASTIC_MEM_JVM: 512m
       ELASTIC_STORAGE_POLICY: DeleteOnScaledownAndClusterDeletion
       ELASTIC_STORAGE_SIZE: 3Gi
-      ELASTIC_VERSION: 7.14.1
       KUBE_NAMESPACE: monitor
       KUBE_SERVICES: elasticsearch-users monitor service deployment
       KUBE_TYPE: k3s
       KUBE_ZONE: local
       SCW_LOG_BUCKET: ${{ secrets.SCW_LOG_BUCKET }}
+      SCW_LOG_ARCHIVE_BUCKET: ${{ secrets.SCW_LOG_ARCHIVE_BUCKET }}
       SCW_LOG_ACCESS_KEY: ${{ secrets.SCW_LOG_ACCESS_KEY }}
       SCW_LOG_SECRET_KEY: ${{ secrets.SCW_LOG_SECRET_KEY }}
       START_TIMEOUT: 200
@@ -110,14 +110,16 @@ jobs:
       ELASTIC_MEM_JVM: 4096m
       ELASTIC_SEARCH_PASSWORD: ${{ secrets.ELASTIC_SEARCH_PASSWORD }}
       ELASTIC_STORAGE_POLICY: DeleteOnScaledownOnly
-      ELASTIC_STORAGE_SIZE: 75Gi
+      ELASTIC_STORAGE_SIZE: 50Gi
       KUBE_INGRESS: nginx
       KUBE_NAMESPACE: monitor
       KUBE_TYPE: k8s
       KUBE_ZONE: scw-monitor-par1
       SCW_LOG_BUCKET: ${{ secrets.SCW_LOG_BUCKET }}
+      SCW_LOG_ARCHIVE_BUCKET: ${{ secrets.SCW_LOG_ARCHIVE_BUCKET }}
       SCW_LOG_ACCESS_KEY: ${{ secrets.SCW_LOG_ACCESS_KEY }}
       SCW_LOG_SECRET_KEY: ${{ secrets.SCW_LOG_SECRET_KEY }}
+      SCW_LOG_GZIP: "true"
       SCW_KUBE_NODES: 1
       SCW_REGION: fr-par
       SCW_ZONE: fr-par-1
