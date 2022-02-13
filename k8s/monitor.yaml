@@ -414,7 +414,9 @@ spec:
         - |
           set -e;
           LOG_DIR=/var/log/s3/
-          rclone -v copy --checkers=8 --transfers=8 --ignore-existing s3:${SCW_LOG_ARCHIVE_BUCKET} ${LOG_DIR};
+          if [ "${SCW_LOG_GZIP}" == "true" ]; then
+            rclone -v copy --checkers=8 --transfers=8 --ignore-existing s3:${SCW_LOG_ARCHIVE_BUCKET} ${LOG_DIR};
+          fi;
       - name: fix-permissions
         image: busybox
         command: ["sh", "-c", "chown -R 1000 /usr/share/logstash/data/plugins"]
