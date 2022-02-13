@@ -93,6 +93,18 @@ data:
   logstash.conf: |
     input {
       file {
+        type => "json_unparsed"
+        path => "/var/log/s3/**/*.jsonl.gz"
+        mode => "read"
+        file_completed_action => "log"
+        file_completed_log_path => "/usr/share/logstash/data/plugins/inputs/file/completed_archive.log"
+        # exit_after_read => true ## this fail as reread all after logstash restart
+        discover_interval => 1000000000
+        stat_interval => 1000000000
+        codec => "gzip_lines"
+      }
+      file {
+        type => "json"
         path => "/var/log/s3/**/*.jsonl"
         mode => "read"
         file_completed_action => "log"
@@ -116,6 +128,11 @@ data:
       # }
     }
     filter {
+      if ([type] == "json_unparsed") {
+        json {
+          source => "message"
+        }
+      }
       date {
         match => [ "date" , "ISO8601" ]
       }
@@ -407,7 +424,7 @@ spec:
         - sh
         - -c
         - |
-          bin/logstash-plugin install logstash-codec-json_lines logstash-filter-urldecode
+          bin/logstash-plugin install logstash-codec-json_lines logstash-codec-gzip_lines logstash-filter-urldecode
       containers:
       - name: logstash
         image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
