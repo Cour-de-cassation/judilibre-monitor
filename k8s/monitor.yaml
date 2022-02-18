@@ -93,7 +93,7 @@ data:
   logstash.conf: |
     input {
       file {
-        type => "json_unparsed"
+        type => "gzip"
         path => "/var/log/s3/**/*.jsonl.gz"
         mode => "read"
         file_completed_action => "log"
@@ -101,7 +101,7 @@ data:
         # exit_after_read => true ## this fail as reread all after logstash restart
         discover_interval => 1000000000
         stat_interval => 1000000000
-        codec => "gzip_lines"
+        codec => "json"
       }
       file {
         type => "json"
@@ -128,11 +128,6 @@ data:
       # }
     }
     filter {
-      if ([type] == "json_unparsed") {
-        json {
-          source => "message"
-        }
-      }
       date {
         match => [ "date" , "ISO8601" ]
       }
@@ -448,17 +443,35 @@ spec:
               key: AWS_SECRET_ACCESS_KEY
       - name: fix-permissions
         image: busybox
-        command: ["sh", "-c", "chown -R 1000 /usr/share/logstash/data/plugins"]
-        volumeMounts:
-        - name: logstash-data-plugins
-          mountPath: /usr/share/logstash/data/plugins
-      - name: install-plugins
-        image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
         command:
         - sh
         - -c
         - |
-          bin/logstash-plugin install logstash-codec-json_lines logstash-codec-gzip_lines logstash-filter-urldecode
+          chown -R 1000 /usr/share/logstash/data/plugins
+          # chown -R 1000 /gem-plugins /gem-files
+        volumeMounts:
+        - name: logstash-data-plugins
+          mountPath: /usr/share/logstash/data/plugins
+        # - name: logstash-gem-files
+        #   mountPath: /gem-files
+        # - name: logstash-gem-plugins
+        #   mountPath: /gem-plugins
+      # - name: install-plugins
+      #   image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
+      #   command:
+      #   - sh
+      #   - -c
+      #   - |
+      #     bin/logstash-plugin install logstash-codec-gzip_lines
+      #     cd /opt/logstash/vendor/bundle/jruby/ ; tar cf - . | (cd /gem-plugins; tar xf -)
+      #     cd /usr/share/logstash; tar cf - Gemfile* | (cd /gem-files; tar xf -)
+      #   volumeMounts:
+      #   - name: logstash-gem-plugins
+      #     mountPath: /gem-plugins
+      #   - name: logstash-gem-files
+      #     mountPath: /gem-files
+      #   - name: logstash-data-plugins
+      #     mountPath: /usr/share/logstash/data/plugins
       containers:
       - name: logstash
         image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
@@ -491,6 +504,17 @@ spec:
           - name: s3-log-mirror
             readOnly: true
             mountPath: /var/log/s3
+          # - name: logstash-gem-plugins
+          #   readOnly: true
+          #   mountPath: /opt/logstash/vendor/bundle/jruby
+          # - name: logstash-gem-files
+          #   readOnly: true
+          #   mountPath: /usr/share/logstash/Gemfile
+          #   subPath: Gemfile
+          # - name: logstash-gem-files
+          #   readOnly: true
+          #   mountPath: /usr/share/logstash/Gemfile.lock
+          #   subPath: Gemfile.lock
           - name: logstash-data-plugins
             readOnly: false
             mountPath: /usr/share/logstash/data/plugins
@@ -513,6 +537,10 @@ spec:
       - name: s3-log-mirror
         persistentVolumeClaim:
           claimName: s3-log-mirror
+      # - name: logstash-gem-plugins
+      #   emptyDir: {}
+      # - name: logstash-gem-files
+      #   emptyDir: {}
       - name: logstash-data-plugins
         persistentVolumeClaim:
           claimName: logstash-data-plugins
