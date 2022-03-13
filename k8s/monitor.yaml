@@ -93,17 +93,6 @@ data:
   logstash.conf: |
     input {
       file {
-        type => "gzip"
-        path => "/var/log/s3/**/*.jsonl.gz"
-        mode => "read"
-        file_completed_action => "log"
-        file_completed_log_path => "/usr/share/logstash/data/plugins/inputs/file/completed_archive.log"
-        # exit_after_read => true ## this fail as reread all after logstash restart
-        discover_interval => 1000000000
-        stat_interval => 1000000000
-        codec => "json"
-      }
-      file {
         type => "json"
         path => "/var/log/s3/**/*.jsonl"
         mode => "read"
@@ -113,19 +102,6 @@ data:
         stat_interval => 1
         codec => "json"
       }
-      # s3 {
-      #   access_key_id => "${AWS_ACCESS_KEY_ID}"
-      #   secret_access_key => "${AWS_SECRET_ACCESS_KEY}"
-      #   bucket => "${SCW_LOG_BUCKET}"
-      #   region => "${SCW_REGION}"
-      #   endpoint => "https://s3.${SCW_REGION}.scw.cloud"
-      #   codec => "json_lines"
-      #   additional_settings => {
-      #     force_path_style => true
-      #     ssl_verify_peer => false
-      #     http_wire_trace => true
-      #   }
-      # }
     }
     filter {
       date {
@@ -254,15 +230,6 @@ data:
           }
         } else {
           drop {}
-          # if [kubernetes_container_name] {
-          #   mutate {
-          #     add_field => { "log_type" => "kubernetes" }
-          #   }
-          # } else {
-          #   mutate {
-          #     add_field => { "log_type" => "other" }
-          #   }
-          # }
         }
       }
     }
@@ -290,7 +257,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 50Gi
+      storage: 10Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -319,7 +286,7 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 0
-      activeDeadlineSeconds: 3600
+      # activeDeadlineSeconds: 7200
       template:
         spec:
           containers:
@@ -335,11 +302,10 @@ spec:
             - |
               set -e;
               LOG_DIR=/var/log/s3/
-              LOG_DIR=$(pwd)/logs
               echo archives:${SCW_LOG_ARCHIVE_BUCKET} logs:${SCW_LOG_BUCKET}
               rclone -v copy --checkers=8 --transfers=8 --ignore-existing s3:${SCW_LOG_BUCKET} ${LOG_DIR};
               if [ "${SCW_LOG_GZIP}" == "true" ]; then
-                for LOG_DIR_ENVDAY in $(find ${LOG_DIR} -type d -mindepth 5 -maxdepth 5 | grep -v "/$(date +%Y%m%d)" | grep -v "/$(date --date=yesterday +%Y%m%d)" | sort);do
+                for LOG_DIR_ENVDAY in $(find ${LOG_DIR} -mindepth 5 -maxdepth 5 -type d | grep -v "/$(date +%Y%m%d)" | grep -v "/$(date --date=yesterday +%Y%m%d)" | sort);do
                   echo concatenating and zipping ${LOG_DIR_ENVDAY};
                   (cat $(find ${LOG_DIR_ENVDAY} -type f -iname '*.jsonl' | sort) | gzip > ${LOG_DIR_ENVDAY}.jsonl.gz) && rm -rf ${LOG_DIR_ENVDAY};
                 done
@@ -397,50 +363,6 @@ spec:
         app: logstash
     spec:
       initContainers:
-      - name: sync-archive-logs
-        image: rclone/rclone:latest
-        volumeMounts:
-          - name: s3-log-mirror
-            mountPath: /var/log/s3
-        command:
-        - /bin/sh
-        args:
-        - -c
-        - |
-          set -e;
-          LOG_DIR=/var/log/s3/
-          if [ "${SCW_LOG_GZIP}" == "true" ]; then
-            rclone -v copy --checkers=8 --transfers=8 --ignore-existing s3:${SCW_LOG_ARCHIVE_BUCKET} ${LOG_DIR};
-          fi;
-        env:
-        - name: RCLONE_CONFIG_S3_TYPE
-          value: s3
-        - name: RCLONE_CONFIG_S3_ENV_AUTH
-          value: "false"
-        - name: RCLONE_CONFIG_S3_ENDPOINT
-          value: s3.${SCW_REGION}.scw.cloud
-        - name: RCLONE_CONFIG_S3_REGION
-          value: ${SCW_REGION}
-        - name: RCLONE_CONFIG_S3_SERVER_SIDE_ENCRYPTION
-          value: ""
-        - name: RCLONE_CONFIG_S3_FORCE_PATH_STYLE
-          value: "false"
-        - name: RCLONE_CONFIG_S3_LOCATION_CONSTRAINT
-          value: ""
-        - name: RCLONE_CONFIG_S3_STORAGE_CLASS
-          value: ""
-        - name: RCLONE_CONFIG_S3_ACL
-          value: private
-        - name: RCLONE_CONFIG_S3_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: s3-log-keys
-              key: AWS_ACCESS_KEY_ID
-        - name: RCLONE_CONFIG_S3_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: s3-log-keys
-              key: AWS_SECRET_ACCESS_KEY
       - name: fix-permissions
         image: busybox
         command:
@@ -448,30 +370,9 @@ spec:
         - -c
         - |
           chown -R 1000 /usr/share/logstash/data/plugins
-          # chown -R 1000 /gem-plugins /gem-files
         volumeMounts:
         - name: logstash-data-plugins
           mountPath: /usr/share/logstash/data/plugins
-        # - name: logstash-gem-files
-        #   mountPath: /gem-files
-        # - name: logstash-gem-plugins
-        #   mountPath: /gem-plugins
-      # - name: install-plugins
-      #   image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
-      #   command:
-      #   - sh
-      #   - -c
-      #   - |
-      #     bin/logstash-plugin install logstash-codec-gzip_lines
-      #     cd /opt/logstash/vendor/bundle/jruby/ ; tar cf - . | (cd /gem-plugins; tar xf -)
-      #     cd /usr/share/logstash; tar cf - Gemfile* | (cd /gem-files; tar xf -)
-      #   volumeMounts:
-      #   - name: logstash-gem-plugins
-      #     mountPath: /gem-plugins
-      #   - name: logstash-gem-files
-      #     mountPath: /gem-files
-      #   - name: logstash-data-plugins
-      #     mountPath: /usr/share/logstash/data/plugins
       containers:
       - name: logstash
         image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
@@ -504,17 +405,6 @@ spec:
           - name: s3-log-mirror
             readOnly: true
             mountPath: /var/log/s3
-          # - name: logstash-gem-plugins
-          #   readOnly: true
-          #   mountPath: /opt/logstash/vendor/bundle/jruby
-          # - name: logstash-gem-files
-          #   readOnly: true
-          #   mountPath: /usr/share/logstash/Gemfile
-          #   subPath: Gemfile
-          # - name: logstash-gem-files
-          #   readOnly: true
-          #   mountPath: /usr/share/logstash/Gemfile.lock
-          #   subPath: Gemfile.lock
           - name: logstash-data-plugins
             readOnly: false
             mountPath: /usr/share/logstash/data/plugins
@@ -537,248 +427,9 @@ spec:
       - name: s3-log-mirror
         persistentVolumeClaim:
           claimName: s3-log-mirror
-      # - name: logstash-gem-plugins
-      #   emptyDir: {}
-      # - name: logstash-gem-files
-      #   emptyDir: {}
       - name: logstash-data-plugins
         persistentVolumeClaim:
           claimName: logstash-data-plugins
-# ---
-# apiVersion: v1
-# kind: ConfigMap
-# metadata:
-#   name: filebeat-config
-#   namespace: monitor
-#   labels:
-#     app: filebeat
-# data:
-#   filebeat.yml: |-
-#     filebeat.inputs:
-#     - type: aws-s3
-#       bucket_arn: "arn:scw.cloud:s3:fr-par::${SCW_LOG_BUCKET}"
-#       bucket_regional_domain_name: fr-par
-#       endpoint: scw.cloud
-#       number_of_workers: 5
-#       bucket_list_interval: 60s
-#       expand_event_list_from_field: Records
-#       json.keys_under_root: true
-#       include_s3_metadata:
-#         - key
-
-#     output.elasticsearch:
-#       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
-#       username: ${ELASTICSEARCH_USERNAME}
-#       password: ${ELASTICSEARCH_PASSWORD}
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: filebeat-data
-#   namespace: monitor
-#   labels:
-#     app: filebeat
-# spec:
-#   accessModes:
-#   - ReadWriteOnce
-#   resources:
-#     requests:
-#       storage: 50Gi
-# ---
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: filebeat-deployment
-#   namespace: monitor
-#   labels:
-#     app: filebeat
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: filebeat
-#   template:
-#     metadata:
-#       labels:
-#         app: filebeat
-#     spec:
-#       terminationGracePeriodSeconds: 30
-#       initContainers:
-#       # By default k8s mounts the data directory as root, which renders it inaccessible to Elasticsearch.
-#       - name: fix-permissions
-#         image: busybox
-#         command: ["sh", "-c", "chown -R 1000:1000 /usr/share/filebeat/data"]
-#         securityContext:
-#           privileged: true
-#         volumeMounts:
-#         - name: data
-#           mountPath: /usr/share/filebeat/data
-#       containers:
-#       - name: filebeat
-#         image: docker.elastic.co/beats/filebeat:7.15.0
-#         args: [
-#           "-c", "/etc/filebeat.yml",
-#           "-e",
-#         ]
-#         env:
-#         - name: ELASTICSEARCH_HOST
-#           value: monitor-es-http
-#         - name: ELASTICSEARCH_PORT
-#           value: "9200"
-#         - name: ELASTICSEARCH_USERNAME
-#           value: elastic
-#         - name: ELASTICSEARCH_PASSWORD
-#           valueFrom:
-#             secretKeyRef:
-#               name: ${APP_GROUP}-es-elastic-user
-#               key: elastic
-#         - name: AWS_ACCESS_KEY_ID
-#           valueFrom:
-#             secretKeyRef:
-#               name: s3-log-keys
-#               key: AWS_ACCESS_KEY_ID
-#         - name: AWS_SECRET_ACCESS_KEY
-#           valueFrom:
-#             secretKeyRef:
-#               name: s3-log-keys
-#               key: AWS_SECRET_ACCESS_KEY
-#         volumeMounts:
-#         - name: config
-#           mountPath: /etc/filebeat.yml
-#           readOnly: true
-#           subPath: filebeat.yml
-#         - name: data
-#           mountPath: /usr/share/filebeat/data
-#       volumes:
-#       - name: config
-#         configMap:
-#           defaultMode: 0640
-#           name: filebeat-config
-#       # data folder stores a registry of read status for all files, so we don't send everything again on a Filebeat pod restart
-#       - name: data
-#         persistentVolumeClaim:
-#           claimName: filebeat-
-# ---
-# apiVersion: v1
-# kind: ConfigMap
-# metadata:
-#   name: vector
-#   namespace: monitor
-#   labels:
-#     app: vector
-# data:
-#   # We leave `vector.toml` file name available to let externally managed config
-#   # maps to provide it.
-#   vector.toml: |
-#     # Configuration for vector.
-#     # Docs: https://vector.dev/docs/
-
-#     data_dir = "/vector-data-dir"
-
-#     [api]
-#       enabled = false
-
-#     [log_schema]
-#       host_key = "host"
-#       message_key = "message"
-#       source_type_key = "source_type"
-#       timestamp_key = "timestamp"
-
-#     # Accept logs from Vector agents.
-#     [sources.scw_logs]
-#       type = "aws_s3"
-#       endpoint = "https://s3.fr-par.scw.cloud"
-#       bucket = "${SCW_LOG_BUCKET}"
-
-# ---
-# apiVersion: v1
-# kind: ServiceAccount
-# metadata:
-#   name: vector
-#   namespace: monitor
-#   labels:
-#     app.kubernetes.io/name: vector
-#     app.kubernetes.io/instance: vector
-# automountServiceAccountToken: true
-# ---
-# apiVersion: apps/v1
-# kind: StatefulSet
-# metadata:
-#   name: vector
-#   namespace: monitor
-#   labels:
-#     app.kubernetes.io/name: vector
-#     app.kubernetes.io/instance: vector
-# spec:
-#   serviceName: vector
-#   selector:
-#     matchLabels:
-#       app.kubernetes.io/name: vector
-#       app.kubernetes.io/instance: vector
-#       app.kubernetes.io/component: aggregator
-#   podManagementPolicy: "Parallel"
-#   replicas: 1
-#   template:
-#     metadata:
-#       labels:
-#         app.kubernetes.io/name: vector
-#         app.kubernetes.io/instance: vector
-#         app.kubernetes.io/component: aggregator
-#         vector.dev/exclude: "true"
-#     spec:
-#       containers:
-#         - name: vector
-#           image: "timberio/vector:latest-debian"
-#           args:
-#             - --config-dir
-#             - /etc/vector/
-#           env:
-#             - name: ELASTIC_PASSWORD
-#               valueFrom:
-#                 secretKeyRef:
-#                   name: ${APP_GROUP}-es-elastic-user
-#                   key: elastic
-#             - name: AWS_ACCESS_KEY_ID
-#               valueFrom:
-#                 secretKeyRef:
-#                   name: s3-log-keys
-#                   key: AWS_ACCESS_KEY_ID
-#             - name: AWS_SECRET_ACCESS_KEY
-#               valueFrom:
-#                 secretKeyRef:
-#                   name: s3-log-keys
-#                   key: AWS_SECRET_ACCESS_KEY
-#             - name: LOG
-#               value: info
-#           volumeMounts:
-#             # Vector data dir mount.
-#             - name: vector-data
-#               mountPath: "/vector-data-dir"
-#             # Vector config dir mount.
-#             - name: config-dir
-#               mountPath: /etc/vector
-#               readOnly: true
-#             # Extra volumes.
-#       terminationGracePeriodSeconds: 60
-#       tolerations:
-#         - effect: NoSchedule
-#           key: node-role.kubernetes.io/master
-#       volumes:
-#         # Vector config dir.
-#         - name: config-dir
-#           projected:
-#             sources:
-#               - configMap:
-#                   name: vector
-#   volumeClaimTemplates:
-#     - metadata:
-#         name: vector-data
-#       spec:
-#         accessModes:
-#         - ReadWriteOnce
-#         resources:
-#           requests:
-#             storage: 1Gi
 ---
 apiVersion: kibana.k8s.elastic.co/v1
 kind: Kibana
