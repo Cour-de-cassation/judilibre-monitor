@@ -23,7 +23,7 @@ const appDic = {
   Intrap: "banque-france.fr",
   APP_PRODUCTION_LNF_Judilibre: "lexisnexis.fr",
   Dataset: "codoc.co",
-  LGF_Judilibre: "lgf-sd7580"
+  LGF_JUDILIBRE: "lgf-sd7580"
 }
 
 
