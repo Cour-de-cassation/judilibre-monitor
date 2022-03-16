@@ -156,7 +156,7 @@ jobs:
       #    KUBE_SERVICES_FORCE_UPDATE: monitor
       - name: 🚀 Update remote app ☸️
         run: |
-          ./scripts/update_app.sh
+          ./scripts/update_app.sh || (cat k8s*log && exit 1)
           kubectl get pods --namespace=${KUBE_NAMESPACE}
           kubectl logs service/${APP_ID}-svc --namespace=${KUBE_NAMESPACE}
         env:
