@@ -18,7 +18,12 @@ const appDic = {
   APP_JUDILIBRE_PROD: "_",
   Uptime: "_",
   juriwinch: "aw-avocats.fr",
-  JUDILIBRE: "lefebvre-sarrut.eu"
+  JUDILIBRE: "lefebvre-sarrut.eu",
+  APP_Production: "doctrine.fr",
+  Intrap: "banque-france.fr",
+  APP_PRODUCTION_LNF_Judilibre: "lexisnexis.fr",
+  Dataset: "codoc.co",
+  LGF_Judilibre: "lgf-sd7580"
 }
 
 
