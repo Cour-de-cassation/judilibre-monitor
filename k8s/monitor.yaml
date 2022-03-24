@@ -302,15 +302,17 @@ spec:
             - |
               set -e;
               LOG_DIR=/var/log/s3/
-              echo archives:${SCW_LOG_ARCHIVE_BUCKET} logs:${SCW_LOG_BUCKET}
+              TODAY=$(date +%Y%m%d)
+              YESTERDAY=$(date -d "@$(($(date +%s) - 86400))" +%Y%m%d)
+              echo TODAY=${TODAY} YESTERDAY=${YESTERDAY} archives:${SCW_LOG_ARCHIVE_BUCKET} logs:${SCW_LOG_BUCKET}
               rclone -v copy --checkers=8 --transfers=8 --ignore-existing s3:${SCW_LOG_BUCKET} ${LOG_DIR};
               if [ "${SCW_LOG_GZIP}" == "true" ]; then
-                for LOG_DIR_ENVDAY in $(find ${LOG_DIR} -mindepth 5 -maxdepth 5 -type d | grep -v "/$(date +%Y%m%d)" | grep -v "/$(date --date=yesterday +%Y%m%d)" | sort);do
+                for LOG_DIR_ENVDAY in $(find ${LOG_DIR} -mindepth 5 -maxdepth 5 -type d | grep -v "/${TODAY}" | grep -v "/${YESTERDAY}" | sort);do
                   echo concatenating and zipping ${LOG_DIR_ENVDAY};
                   (cat $(find ${LOG_DIR_ENVDAY} -type f -iname '*.jsonl' | sort) | gzip > ${LOG_DIR_ENVDAY}.jsonl.gz) && rm -rf ${LOG_DIR_ENVDAY};
                 done
                 rclone -v copy --checkers=8 --transfers=8 --ignore-existing ${LOG_DIR} s3:${SCW_LOG_ARCHIVE_BUCKET} --include=**.jsonl.gz;
-                rclone -v delete --checkers=8 --transfers=8 s3:${SCW_LOG_BUCKET} --exclude=**/$(date +%Y%m%d)** --exclude=**/$(date --date=yesterday +%Y%m%d)**;
+                rclone -v delete --checkers=8 --transfers=8 s3:${SCW_LOG_BUCKET} --exclude=**/${TODAY}** --exclude=**/${YESTERDAY}**;
               fi;
             env:
             - name: RCLONE_CONFIG_S3_TYPE
