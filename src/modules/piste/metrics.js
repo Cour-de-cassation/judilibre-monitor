@@ -10,6 +10,7 @@ const appDic = {
   jurisprudence_ninja: "judisprudence.ninja",
   Reglex: "reglex.fondamentaux.org",
   Data: "doctrine.fr",
+  DPO_DOCTRINE: "doctrine.fr",
   juripredis: "juripredis.com",
   ImportJudilibreLuxia: "luxia.fr",
   PROD_LEXBASE: "lexbase.fr",
@@ -23,7 +24,9 @@ const appDic = {
   Intrap: "banque-france.fr",
   APP_PRODUCTION_LNF_Judilibre: "lexisnexis.fr",
   Dataset: "codoc.co",
-  LGF_JUDILIBRE: "lgf-sd7580"
+  LGF_JUDILIBRE: "lgf-sd7580",
+  Pappers: "pappers.fr",
+  Prod_SidoHorizon: "sidohorizon.fr"
 }
 
 
