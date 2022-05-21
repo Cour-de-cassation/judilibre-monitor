@@ -1,4 +1,5 @@
 require('../env');
+const fs = require('fs');
 
 class Elastic {
   constructor() {
@@ -6,7 +7,13 @@ class Elastic {
       this.data = null;
     } else {
       const { Client } = require('@elastic/elasticsearch');
-      this.client = new Client({ node: `${process.env.ELASTIC_NODE}`, ssl: { rejectUnauthorized: false } });
+      this.client = new Client({
+        node: `${process.env.ELASTIC_NODE}`,
+        tls: {
+          ca: fs.readFileSync(`${process.env.ELASTIC_CERT}`),
+          rejectUnauthorized: false
+        }
+      });
     }
   }
 

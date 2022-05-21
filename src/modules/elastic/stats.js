@@ -44,12 +44,12 @@ async function stats(query) {
     return;
   }
 
-  if (content && content.body) {
+  if (content) {
     response[checkedQuery.query] = {};
-    if (content.body.aggregations && content.body.aggregations["0"] && content.body.aggregations["0"].buckets) {
-      if (content.body.aggregations["0"].buckets.length && content.body.aggregations["0"].buckets[0].key_as_string) {
+    if (content.aggregations && content.aggregations["0"] && content.aggregations["0"].buckets) {
+      if (content.aggregations["0"].buckets.length && content.aggregations["0"].buckets[0].key_as_string) {
         // time series
-        response[checkedQuery.query].data = content.body.aggregations["0"].buckets.map(b => {
+        response[checkedQuery.query].data = content.aggregations["0"].buckets.map(b => {
           let data = { date: b.key_as_string };
           Object.keys(b).forEach(k => {
             if (b[k].buckets) {
@@ -68,7 +68,7 @@ async function stats(query) {
       } else {
         // histogram
         let data = {};
-        content.body.aggregations["0"].buckets.forEach(b => {
+        content.aggregations["0"].buckets.forEach(b => {
           data[b.key] = b.doc_count;
         });
         response[checkedQuery.query].data = data;
@@ -77,7 +77,7 @@ async function stats(query) {
     } else {
         // total or simple aggregation
         response[checkedQuery.query] = {
-          data: (content.body.aggregations && content.body.aggregations["0"] && content.body.aggregations["0"].value ) || content.body.hits.total.value,
+          data: (content.aggregations && content.aggregations["0"] && content.aggregations["0"].value ) || content.hits.total.value,
           type: "number"
         }
     }
@@ -88,7 +88,7 @@ async function stats(query) {
       date_interval: checkedQuery.date_interval
     };
 
-    // response[checkedQuery.query].raw_response=content.body;
+    // response[checkedQuery.query].raw_response=content;
     // response[checkedQuery.query].query=elasticQuery;
 
   }
