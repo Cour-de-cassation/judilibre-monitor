@@ -20,7 +20,7 @@
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
     "express-validator": "^6.14.0",
-    "node-fetch": "^3.2.4",
+    "node-fetch": "^3.2.10",
     "rate-limiter-flexible": "^2.3.7"
   }
 }
