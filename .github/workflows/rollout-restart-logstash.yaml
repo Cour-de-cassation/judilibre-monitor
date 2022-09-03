@@ -8,7 +8,6 @@ on:
 jobs:
   rollout-restart-logstash:
     name: 🔃 Restart logstash indexing 
-    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     env:
       ACME: acme
